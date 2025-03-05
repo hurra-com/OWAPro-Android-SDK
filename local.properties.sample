@@ -1,0 +1,6 @@
+# Sample local properties file for integration tests
+# Copy this file to local.properties and fill in your test credentials
+
+# Test credentials for integration tests
+test.accountId=your_test_account_id
+test.apiKey=your_test_api_key 
