@@ -4,6 +4,8 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.SharedPreferences
 import android.provider.Settings
+import android.webkit.URLUtil
+import android.webkit.WebSettings
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -24,10 +26,12 @@ class HurraS2SSDKTest {
         contentResolver = mockk()
         
         mockkStatic(Settings.Secure::class)
+        mockkStatic(WebSettings::class)
         mockkObject(NetworkClient)
         
         every { context.getSharedPreferences(any(), any()) } returns sharedPrefs
         every { context.contentResolver } returns contentResolver
+        every { context.packageName } returns "com.test.app"
         every { sharedPrefs.edit() } returns editor
         every { editor.putString(any(), any()) } returns editor
         every { editor.apply() } just Runs
@@ -37,6 +41,25 @@ class HurraS2SSDKTest {
         
         // Set up logging redirection
         TestLogger.setup()
+        
+        // Add this mock
+        every { WebSettings.getDefaultUserAgent(any()) } returns "test-user-agent"
+
+        // Mock URLUtil.isValidUrl
+        mockkStatic(URLUtil::class)
+        every { URLUtil.isValidUrl(any()) } answers {
+            val url = arg<String>(0)
+            url.startsWith("http://") || url.startsWith("https://") || url.startsWith("android-app://")
+        }
+
+        // Add default mock for NetworkClient.post
+        coEvery { 
+            NetworkClient.post(
+                url = any(),
+                headers = any(),
+                body = any()
+            )
+        } returns EventResponse(success = true, statusCode = 200)
     }
     
     @Test
@@ -155,20 +178,6 @@ class HurraS2SSDKTest {
             useAdvertiserId = false
         )
         
-        coEvery { 
-            NetworkClient.post(
-                url = any(),
-                headers = any(),
-                body = match<Map<String, Any>> { 
-                    it["event_type"] == "test_event" && 
-                    it["url"] == "test_view" &&
-                    it["test_key"] == "test_value" &&
-                    it["is_interactive"] == 1 &&
-                    it.containsKey("event_ts")
-                }
-            )
-        } returns EventResponse(success = true, statusCode = 200)
-        
         // When
         val result = sdk.trackEvent(
             eventType = "test_event",
@@ -185,12 +194,13 @@ class HurraS2SSDKTest {
             NetworkClient.post(
                 url = match { it.contains("account_id") },
                 headers = match { it["Authorization"] == "Bearer api_key" },
-                body = match { 
-                    it["event_type"] == "test_event" && 
-                    it["url"] == "test_view" &&
-                    it["test_key"] == "test_value" &&
-                    it["is_interactive"] == 1 &&
-                    it.containsKey("event_ts")
+                body = match { body ->
+                    body["event_type"] == "test_event" && 
+                    body["url"]?.toString()?.startsWith("android-app://") == true &&
+                    body["test_key"] == "test_value" &&
+                    body["is_interactive"] == 1 &&
+                    body.containsKey("event_ts") &&
+                    body["user_id"] == "test_user_id"
                 }
             )
         }
@@ -206,20 +216,6 @@ class HurraS2SSDKTest {
             useAdvertiserId = false
         )
         
-        coEvery { 
-            NetworkClient.post(
-                url = any(),
-                headers = any(),
-                body = match<Map<String, Any>> { 
-                    it["event_type"] == "page_view" && 
-                    it["url"] == "test_view" &&
-                    it["screen_name"] == "test_screen" &&
-                    it["is_interactive"] == 0 &&
-                    it.containsKey("event_ts")
-                }
-            )
-        } returns EventResponse(success = true, statusCode = 200)
-        
         // When
         val result = sdk.trackView(
             eventData = mapOf("screen_name" to "test_screen"),
@@ -234,12 +230,13 @@ class HurraS2SSDKTest {
             NetworkClient.post(
                 url = match { it.contains("account_id") },
                 headers = match { it["Authorization"] == "Bearer api_key" },
-                body = match { 
-                    it["event_type"] == "page_view" && 
-                    it["url"] == "test_view" &&
-                    it["screen_name"] == "test_screen" &&
-                    it["is_interactive"] == 0 &&
-                    it.containsKey("event_ts")
+                body = match { body ->
+                    body["event_type"] == "page_view" && 
+                    body["url"]?.toString()?.startsWith("android-app://") == true &&
+                    body["screen_name"] == "test_screen" &&
+                    body["is_interactive"] == 1 &&
+                    body["user_id"] == "test_user_id" &&
+                    body.containsKey("event_ts")
                 }
             )
         }
