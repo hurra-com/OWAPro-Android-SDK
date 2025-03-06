@@ -9,27 +9,109 @@ Android SDK for tracking events and views in your application.
 - View tracking with referrer support
 - Automatic user ID generation and storage
 - Configurable privacy preferences
+- Default User-Agent support
 
 ## Installation
 
-Add the dependency to your app's build.gradle:
+Add repository to your app's build.gradle(.kts):
 
-```gradle
-dependencies {
-    implementation 'com.hurra:s2ssdk:1.0.0'
+Generate GitHub token and add it to your ~/.gradle/gradle.properties file:
+```properties
+gpr.user=your_github_username
+gpr.key=your_github_token
+```
+
+Using Kotlin DSL (build.gradle.kts):
+```kotlin
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/hurra-com/OWAPro-Android-SDK")
+            credentials {
+                username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
+                password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
 }
+```
+
+Using Groovy DSL (settings.gradle):
+```groovy
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/hurra-com/OWAPro-Android-SDK")
+            credentials {
+                username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GITHUB_ACTOR")
+                password = providers.gradleProperty("gpr.key").orNull ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+}
+```
+
+Add the dependency to your app's build.gradle(.kts):
+
+Using Kotlin DSL (build.gradle.kts):
+```kotlin
+dependencies {
+    implementation("com.hurra.s2s:HurraS2SSDK:1.0.1")
+}
+```
+
+Using Groovy DSL (build.gradle):
+```groovy
+dependencies {
+    implementation 'com.hurra.s2s:HurraS2SSDK:1.0.1'
+}
+```
+
+## Configuration
+
+Add the following to your `local.properties` file:
+
+```properties
+HURRA_S2S_ACCOUNT_ID=your_account_id
+HURRA_S2S_API_KEY=your_api_key
 ```
 
 ## Usage
 
-### Initialize SDK
+### Initialize SDK using auto-generated user ID
 
 ```kotlin
 val sdk = HurraS2SSDK(
     context = context,
-    accountId = "your-account-id",  // Required
-    apiKey = "your-api-key",        // Required
+    accountId = BuildConfig.HURRA_S2S_ACCOUNT_ID,  // From local.properties
+    apiKey = BuildConfig.HURRA_S2S_API_KEY,        // From local.properties
     useAdvertiserId = false         // Optional, defaults to false
+)
+```
+
+### Initialize SDK using Advertiser ID
+
+```kotlin
+val sdk = HurraS2SSDK(
+    context = context,
+    accountId = BuildConfig.HURRA_S2S_ACCOUNT_ID,  // From local.properties
+    apiKey = BuildConfig.HURRA_S2S_API_KEY,        // From local.properties
+    useAdvertiserId = true
+)
+```
+
+### Initialize SDK using custom user ID
+
+```kotlin
+val sdk = HurraS2SSDK(
+    context = context,
+    accountId = BuildConfig.HURRA_S2S_ACCOUNT_ID,  // From local.properties
+    apiKey = BuildConfig.HURRA_S2S_API_KEY,        // From local.properties
+    customUserId = "your_user_id"
 )
 ```
 
@@ -67,7 +149,6 @@ val privacyPrefs = PrivacyPrefs().apply {
     "v_vendor-name": 1, // Vendor by name slug
     "x_ext123": 1      // Vendor by external ID
 }
-```
 
 sdk.setPrivacyPrefs(privacyPrefs)
 ```
@@ -77,18 +158,17 @@ sdk.setPrivacyPrefs(privacyPrefs)
 ```kotlin
 lifecycleScope.launch {
     sdk.trackEvent(
+        eventType = "purchase",
         eventData = mapOf(
-            "event_type" to "purchase",
             "product_id" to "123",
             "value" to 99.99
         ),
         currentView = "checkout",
-        isInteractive = true
     ).onSuccess { response ->
-        if (response.status == 1) {
+        if (response.success) {
             Log.d("App", "Event tracked successfully")
         } else {
-            Log.e("App", "Event tracking failed: ${response.errors}")
+            Log.e("App", "Event tracking failed: ${response.responseBody}")
         }
     }
 }
@@ -108,14 +188,19 @@ lifecycleScope.launch {
 }
 ```
 
+## URL Format
+
+- If currentView is a valid URL, it will be used as-is
+- If currentView is not a URL, it will be transformed to: `android-app://${application_package}/${currentView}`
+
 ## Request Format
 
 All requests include:
 - `event_ts`: Timestamp of the event
 - `user_id`: Generated UUID or Advertiser ID
-- `url`: Current view name/URL
+- `url`: Current view name/URL (transformed if needed)
 - `referrer`: Previous view name/URL (if any)
-- `is_interactive`: 1 if user interaction, 0 otherwise
+- `is_interactive`: 1 if user interaction, 0 if not, omitted if null
 - `privacy_prefs`: Privacy preferences (if set)
 - Additional event data as provided
 
@@ -123,13 +208,15 @@ Requests are sent to: `https://s2s.hurra.com/rt/?cid=account_id&app=1`
 
 Headers:
 - `Authorization: Bearer your-api-key`
+- `User-Agent`: Device's default User-Agent
 
 ## Response Format
 
 ```json
 {
-    "status": 1,    // 1 for success, 0 for failure
-    "error": []     // Array of error messages if any
+    "success": true,    // true for success, false for failure
+    "statusCode": 200,  // HTTP status code
+    "responseBody": ""  // Response body if any
 }
 ```
 
@@ -140,6 +227,7 @@ Debug builds include detailed logging:
 - Request and response bodies
 - Network errors and exceptions
 - SDK initialization details
+- Default User-Agent information
 
 ## Requirements
 
@@ -153,8 +241,9 @@ The SDK uses Kotlin's Result type:
 ```kotlin
 sdk.trackEvent(...).onSuccess { response ->
     // Handle success
-    // response.status: 1 for success, 0 for failure
-    // response.errors: List of error messages
+    // response.success: true for success, false for failure
+    // response.statusCode: HTTP status code
+    // response.responseBody: Response body if any
 }.onFailure { error ->
     // Handle network or other errors
 }

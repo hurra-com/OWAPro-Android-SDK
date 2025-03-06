@@ -49,7 +49,7 @@ android {
 }
 
 val libraryVersion = "1.0.1"
-group = "com.hurra"
+group = "com.hurra.s2s"
 version = libraryVersion
 
 
@@ -85,8 +85,8 @@ publishing {
     
     publications {
         register<MavenPublication>("release") {
-            groupId = "com.hurra"
-            artifactId = "s2s-sdk"
+            groupId = "com.hurra.s2s"
+            artifactId = "HurraS2SSDK"
             version = libraryVersion
 
             afterEvaluate {
