@@ -48,7 +48,7 @@ android {
     }
 }
 
-val libraryVersion = "1.0.0"
+val libraryVersion = "1.0.1"
 group = "com.hurra"
 version = libraryVersion
 
