@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    `maven-publish`
 }
 
 android {
@@ -38,20 +39,19 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 val libraryVersion = "1.0.0"
+group = "com.hurra"
+version = libraryVersion
 
-// Optional: If you want to publish your library
-// publishing {
-//     publications {
-//         create<MavenPublication>("maven") {
-//             groupId = "com.hurra"
-//             artifactId = "s2s-sdk"
-//             version = libraryVersion
-//         }
-//     }
-// }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
@@ -69,4 +69,29 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/hurra-com/OWAPro-Android-SDK")
+            credentials {
+                username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+                password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
+            }
+        }
+    }
+    
+    publications {
+        register<MavenPublication>("release") {
+            groupId = "com.hurra"
+            artifactId = "s2s-sdk"
+            version = libraryVersion
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
 }
