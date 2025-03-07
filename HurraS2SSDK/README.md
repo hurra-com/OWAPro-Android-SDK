@@ -60,14 +60,14 @@ Add the dependency to your app's build.gradle(.kts):
 Using Kotlin DSL (build.gradle.kts):
 ```kotlin
 dependencies {
-    implementation("com.hurra.s2s:HurraS2SSDK:1.0.1")
+    implementation("com.hurra.s2s:sdk:1.0.1")
 }
 ```
 
 Using Groovy DSL (build.gradle):
 ```groovy
 dependencies {
-    implementation 'com.hurra.s2s:HurraS2SSDK:1.0.1'
+    implementation 'com.hurra.s2s:sdk:1.0.1'
 }
 ```
 

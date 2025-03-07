@@ -86,7 +86,7 @@ publishing {
     publications {
         register<MavenPublication>("release") {
             groupId = "com.hurra.s2s"
-            artifactId = "HurraS2SSDK"
+            artifactId = "sdk"
             version = libraryVersion
 
             afterEvaluate {
