@@ -2,15 +2,6 @@
 
 Android SDK for tracking events and views in your application.
 
-## Features
-- User identification (Advertiser ID or generated UUID)
-- Privacy preferences management
-- Event tracking with timestamps
-- View tracking with referrer support
-- Automatic user ID generation and storage
-- Configurable privacy preferences
-- Default User-Agent support
-
 ## Installation
 
 Add repository to your app's build.gradle(.kts):
