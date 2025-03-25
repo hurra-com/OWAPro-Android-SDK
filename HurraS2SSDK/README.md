@@ -144,6 +144,9 @@ val privacyPrefs = PrivacyPrefs().apply {
 sdk.setPrivacyPrefs(privacyPrefs)
 ```
 
+It's also possible to manage privacy preferences through the [PrivacyPrefsAPI](PrivacyPrefsAPI.md)
+In such case there is no need to pass PrivacyPrefs object to the SDK.
+
 ### Track Events
 
 ```kotlin

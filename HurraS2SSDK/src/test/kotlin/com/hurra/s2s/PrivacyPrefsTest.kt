@@ -18,7 +18,7 @@ class PrivacyPrefsTest {
         
         // Then
         val json = prefs.toJson()
-        assertEquals(1, json["ac"])
+        assertEquals(1, json["all"])
         assertEquals(1, json["c1"])  // ANALYTICS
         assertEquals(1, json["123"])
         assertEquals(0, json["v_test-vendor"])

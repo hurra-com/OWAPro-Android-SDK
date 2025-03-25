@@ -17,7 +17,7 @@ class PrivacyPrefsAPI(
     private val accountId: String,
     private val apiKey: String,
     private val userId: String,
-    private val testing: Boolean,
+    private val testing: Boolean? = false,
     private var privacyPrefs: PrivacyPrefs? = null,
 ) {
     private val TAG = "PrivacyPrefsAPI"
@@ -221,7 +221,7 @@ class PrivacyPrefsAPI(
             
             // Prepare headers
             val headers = mutableMapOf<String, String>("Authorization" to "Bearer $apiKey")
-            if (testing) {
+            if (testing!!) {
                 headers["Cookie"] = "tracking_devel_mode=1"
             }
             
@@ -304,7 +304,7 @@ class PrivacyPrefsAPI(
             
             // Prepare headers
             val headers = mutableMapOf<String, String>("Authorization" to "Bearer $apiKey")
-            if (testing) {
+            if (testing!!) {
                 headers["Cookie"] = "tracking_devel_mode=1"
             }
             
