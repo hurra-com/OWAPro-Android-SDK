@@ -61,12 +61,12 @@ Returns current privacy preferences or null if not set.
 ## Consent Management
 
 ```kotlin
-fun getConsentStatus(): Result<ConsentStatus>
+suspend fun getConsentStatus(): Result<ConsentStatus>
 ```
 Fetches the consent status from the server. Updates local showConsentBanner flag and user preferences on success.
 
 ```kotlin
-fun setConsentStatus(status: ConsentStatus): Result<ConsentStatus>
+suspend fun setConsentStatus(status: ConsentStatus): Result<ConsentStatus>
 ```
 Sends the current privacy preferences to the server and updates local state based on the response.
 
@@ -78,12 +78,12 @@ Returns whether the consent banner should be displayed to the user.
 ## Vendor Information
 
 ```kotlin
-fun getVendorsDetails(): Result<List<Vendor>>
+suspend fun getVendorsDetails(): Result<List<Vendor>>
 ```
 Returns a list of all vendors available in the system.
 
 ```kotlin
-fun getVendorDetails(vendorId: String, vendorType: VendorType? = VendorType.VENDOR_ID): Result<Vendor>
+suspend fun getVendorDetails(vendorId: String, vendorType: VendorType? = VendorType.VENDOR_ID): Result<Vendor>
 ```
 Parameters:
 * vendorId: Identifier for the vendor
@@ -92,18 +92,18 @@ Parameters:
 ## Categories
 
 ```kotlin
-fun getCategories(): Result<List<Category>>
+suspend fun getCategories(): Result<List<Category>>
 ```
 Retrieves all available consent categories.
 
 ## Translations
 
 ```kotlin
-fun getTranslations(language: String? = null, fields: List<String>? = null): Result<Translations>
+suspend fun getTranslations(language: String? = null, fields: List<String>? = null): Result<Translations>
 ```
 Fetches translations for consent UI elements.
 Parameters:
-* language: Optional language code
+* language: Optional language code, if ommited the default language will be used
 * fields: Optional list of specific fields to translate
 
 ## response types
