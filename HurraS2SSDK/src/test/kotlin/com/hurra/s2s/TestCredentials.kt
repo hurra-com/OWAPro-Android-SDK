@@ -10,7 +10,9 @@ object TestCredentials {
     private const val CREDENTIALS_FILE = "local.properties"
     private const val ACCOUNT_ID_KEY = "test.accountId"
     private const val API_KEY_KEY = "test.apiKey"
-    
+    private const val VENDOR_ID = "test.vendorid"
+    private const val EXTERNAL_VENDOR_ID = "test.externalVendorId"
+
     private val properties: Properties by lazy {
         val props = Properties()
         
@@ -62,6 +64,18 @@ object TestCredentials {
      * @return The test API key or null if not found
      */
     fun getApiKey(): String? = properties.getProperty(API_KEY_KEY)
+
+    /**
+     * Get the test vendor ID from the credentials file
+     * @return The test vendor ID or null if not found
+     */
+    fun getVendorId(): String? = properties.getProperty(VENDOR_ID)
+
+    /**
+     * Get the test external vendor ID from the credentials file
+     * @return The test external vendor ID or null if not found
+     */
+    fun getExternalVendorId(): String? = properties.getProperty(EXTERNAL_VENDOR_ID)
     
     /**
      * Check if the required test credentials are available

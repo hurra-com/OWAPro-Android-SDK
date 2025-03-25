@@ -44,6 +44,7 @@ interface ApiService {
      * @return Response from API
      */
     @PUT
+    @Headers("Content-Type: application/json")
     suspend fun putRequest(
         @Url url: String,
         @HeaderMap headers: Map<String, String>,

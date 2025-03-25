@@ -4,9 +4,13 @@ import org.json.JSONObject
 
 class PrivacyPrefs {
     private val preferences = mutableMapOf<String, Any>()
+    private var userPreferences: String? = null
+    // private var showConsentBanner: Boolean = false
+    // private val vendors = mutableMapOf<String, Any>()
+    // private val externalVendors = mutableMapOf<String, Any>()
     
     fun setAllCategories(accept: Boolean) {
-        preferences["ac"] = if (accept) 1 else 0
+        preferences["all"] = if (accept) 1 else 0
     }
     
     fun setCategory(category: Category, accept: Boolean) {
@@ -27,6 +31,14 @@ class PrivacyPrefs {
     
     fun toJson(): Map<String, Any> {
         return preferences.toMap()
+    }
+
+    fun setUserPreferences(userPreferences: String?) {
+        this.userPreferences = userPreferences
+    }
+
+    fun getUserPreferences(): String? {
+        return userPreferences
     }
     
     enum class Category {

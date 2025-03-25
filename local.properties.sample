@@ -4,3 +4,4 @@
 # Test credentials for integration tests
 test.accountId=your_test_account_id
 test.apiKey=your_test_api_key 
+test.vendorid=your_test_vendor_id

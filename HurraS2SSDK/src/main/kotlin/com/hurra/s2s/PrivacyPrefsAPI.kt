@@ -18,28 +18,18 @@ class PrivacyPrefsAPI(
     private val apiKey: String,
     private val userId: String,
     private val testing: Boolean,
-    private var privacyPrefs: PrivacyPrefs? = null
+    private var privacyPrefs: PrivacyPrefs? = null,
 ) {
     private val TAG = "PrivacyPrefsAPI"
     private var BASE_URL = "https://s2s.hurra.com"
     private var showConsentBanner: Boolean? = null
+    private var apiAvailable: Boolean? = null
+    private var apiNotAvailableReason: String? = null
     
 //    private val packageName: String = context.packageName
     private val moshi = Moshi.Builder()
         .add(KotlinJsonAdapterFactory())
         .build()
-
-    // // Create type for List<Vendor>
-    // internal fun <T> Moshi.parseList(json: String, type: Class<T>): List<T>? {
-    //     val listType = Types.newParameterizedType(List::class.java, type)
-    //     val adapter = adapter<List<T>>(listType)
-    //     return adapter.fromJson(json)
-    // }
-    // private val vendorsType = Types.newParameterizedType(
-    //     List::class.java,
-    //     Vendor::class.java
-    // )
-    // private val vendorsAdapter = moshi.adapter<List<Vendor>>(vendorsType)
 
     init {
         // Initialize NetworkClient with context to get default User-Agent
@@ -69,9 +59,52 @@ class PrivacyPrefsAPI(
      */
     fun getPrivacyPrefs(): PrivacyPrefs? = privacyPrefs
 
-    fun shouldShowConsentBanner(): Boolean? = showConsentBanner
+    fun shouldShowConsentBanner(): Boolean {
+        if (showConsentBanner == null) {
+            return false
+        }
+        return showConsentBanner == true
+    }
+
+    private suspend fun prefetchConsentStatus() {
+        try {
+            val result = sendRequest<ConsentStatus>(
+                    method = "GET",
+                    endpoint = "consentStatus",
+                    queryParams = mapOf(),
+                    requestBody = mapOf()
+            )
+            if (result.isSuccess) {
+                showConsentBanner = result.getOrNull()?.showConsentBanner
+                apiAvailable = true
+            } else {
+                apiAvailable = false
+                apiNotAvailableReason = result.exceptionOrNull()?.message
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to prefetch consent status", e)
+            apiAvailable = false
+            apiNotAvailableReason = e.message
+        }
+    }
+
+    private suspend fun checkApiAvailability(): Boolean {
+        var response = false
+        // Log.d(TAG, "checkApiAvailability: $apiAvailable")
+        if (apiAvailable == null) {
+            prefetchConsentStatus()
+        }
+        // Log.d(TAG, "checkApiAvailability 2: $apiAvailable")
+        if (apiAvailable == true) {
+            response = true
+        }
+        return response
+    }
 
     suspend fun getConsentStatus(): Result<ConsentStatus> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
         val result = sendRequest<ConsentStatus>(
             method = "GET",
             endpoint = "consentStatus",
@@ -80,29 +113,41 @@ class PrivacyPrefsAPI(
         )
 //        Log.d(TAG, "getConsentStatus: $result")
         if (result.isSuccess) {
-            if (result.getOrNull()?.showConsentBanner != null) {
+            // if (result.getOrNull()?.showConsentBanner != null) {
                 showConsentBanner = result.getOrNull()?.showConsentBanner
+            // }
+            if (result.getOrNull()?.userPreferences != null) {
+                privacyPrefs?.setUserPreferences(result.getOrNull()?.userPreferences)
             }
         }
         return result
     }
 
     suspend fun setConsentStatus(): Result<ConsentStatus> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
         val result =  sendRequest<ConsentStatus>(
             method = "PUT",
             endpoint = "consentStatus",
             queryParams = mapOf(),
-            requestBody = privacyPrefs?.toJson()?.let { mapOf("privacy_prefs" to it) } ?: mapOf()
+            requestBody = privacyPrefs?.toJson() as Map<String, Any>
         )
         if (result.isSuccess) {
-            if (result.getOrNull()?.showConsentBanner != null) {
+            // if (result.getOrNull()?.showConsentBanner != null) {
                 showConsentBanner = result.getOrNull()?.showConsentBanner
+            // }
+            if (result.getOrNull()?.userPreferences != null) {
+                privacyPrefs?.setUserPreferences(result.getOrNull()?.userPreferences)
             }
         }
         return result
     }
 
-    suspend fun getVendors(): Result<List<Vendor>> {
+    suspend fun getVendorsDetails(): Result<List<Vendor>> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
         return sendRequestList<Vendor>(
             method = "GET",
             endpoint = "vendors",
@@ -111,7 +156,28 @@ class PrivacyPrefsAPI(
         )
     }
 
+    enum class VendorType(val value: String) {
+        VENDOR_ID("vendorId"),
+        EXTERNAL_VENDOR_ID("externalVendorId")
+    }
+
+    suspend fun getVendorDetails(vendorId: String, vendorType: VendorType? = VendorType.VENDOR_ID): Result<Vendor> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
+        return sendRequest<Vendor>(
+            method = "GET",
+            endpoint = "vendor/${vendorType?.value}/$vendorId",
+            queryParams = mapOf(),
+            requestBody = mapOf()
+        )
+    }
+
+
     suspend fun getCategories(): Result<List<Category>> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
         return sendRequestList<Category>(
             method = "GET",
             endpoint = "categories",
@@ -120,11 +186,14 @@ class PrivacyPrefsAPI(
         )
     }
 
-    suspend fun getTranslations(language: String): Result<Translations> {
+    suspend fun getTranslations(language: String? = null, fields: List<String>? = null): Result<Translations> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
         return sendRequest<Translations>(
             method = "GET",
-            endpoint = "translations",
-            queryParams = mapOf("language" to language),
+            endpoint = "translations${if (language != null) "/$language" else ""}",
+            queryParams = if (fields != null) mapOf("fields" to fields.joinToString(",")) else mapOf(),
             requestBody = mapOf()
         )
     }

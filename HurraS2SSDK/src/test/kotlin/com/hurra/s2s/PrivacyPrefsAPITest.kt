@@ -58,6 +58,8 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
             testing = true
         )
         api.setBaseUrl(baseUrl)
+
+
     }
 
     @After
@@ -67,6 +69,21 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
 
     @Test
     fun `getConsentStatus returns success with valid response`() = runBlocking {
+
+        val apiStatusResponse = """
+            {
+                "vendors": {"vendor1": 1, "vendor2": 0},
+                "externalVendors": {"ext1": 1},
+                "showConsentBanner": true
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(apiStatusResponse)
+                .addHeader("Content-Type", "application/json")
+        )
         // Prepare mock response
         val responseJson = """
             {
@@ -106,6 +123,12 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
             }
         """.trimIndent()
 
+        // mockWebServer.enqueue(
+        //     MockResponse()
+        //         .setResponseCode(400)
+        //         .setBody(errorJson)
+        //         .addHeader("Content-Type", "application/json")
+        // )
         mockWebServer.enqueue(
             MockResponse()
                 .setResponseCode(400)
@@ -124,7 +147,22 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
     }
 
     @Test
-    fun `getVendors returns correctly parsed list`() = runBlocking {
+    fun `getVendorsDetails returns correctly parsed list`() = runBlocking {
+        
+        val apiStatusResponse = """
+            {
+                "vendors": {"vendor1": 1, "vendor2": 0},
+                "externalVendors": {"ext1": 1},
+                "showConsentBanner": true
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(apiStatusResponse)
+                .addHeader("Content-Type", "application/json")
+        )
         // Prepare mock response
         val responseJson = """
                  [
@@ -155,7 +193,7 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
         )
 
         // Call the API
-        val result = api.getVendors()
+        val result = api.getVendorsDetails()
 
         // Verify the result
         assertTrue(result.isSuccess)
@@ -169,8 +207,75 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
        assertEquals("v2", vendors[1].vendorId)
     }
 
+    @Test
+    fun `getVendorDetails returns correctly parsed list`() = runBlocking {
+        
+        val apiStatusResponse = """
+            {
+                "vendors": {"vendor1": 1, "vendor2": 0},
+                "externalVendors": {"ext1": 1},
+                "showConsentBanner": true
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(apiStatusResponse)
+                .addHeader("Content-Type", "application/json")
+        )
+        // Prepare mock response
+        val responseJson = """
+            {
+                "name": "Vendor 1",
+                "vendorId": "v1",
+                "externalVendorId": "ext1",
+                "categoryName": "Analytics",
+                "legalBasis": "consent",
+                "defaultStatus": 1
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(responseJson)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        // Call the API
+        val result = api.getVendorDetails("v1")
+
+        // Verify the result
+        assertTrue(result.isSuccess)
+        val vendor = result.getOrNull()
+        assertNotNull(vendor)
+        // Log.d("PrivacyPrefsAPITest", "getVendors: $vendors")
+        assertEquals("Vendor 1", vendor.name)
+        assertEquals("v1", vendor.vendorId)
+        assertEquals("ext1", vendor.externalVendorId)
+        assertEquals("Analytics", vendor.categoryName)
+        assertEquals("consent", vendor.legalBasis)
+        assertEquals(1, vendor.defaultStatus)
+    }
+
    @Test
    fun `getCategories returns correctly parsed categories`() = runBlocking {
+
+        val apiStatusResponse = """
+            {
+                "vendors": {"vendor1": 1, "vendor2": 0},
+                "externalVendors": {"ext1": 1},
+                "showConsentBanner": true
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(apiStatusResponse)
+                .addHeader("Content-Type", "application/json")
+        )
        // Prepare mock response
        val responseJson = """
            [
@@ -211,6 +316,20 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
 
     @Test
     fun `getTranslations returns correctly localized data`() = runBlocking {
+        val apiStatusResponse = """
+            {
+                "vendors": {"vendor1": 1, "vendor2": 0},
+                "externalVendors": {"ext1": 1},
+                "showConsentBanner": true
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(apiStatusResponse)
+                .addHeader("Content-Type", "application/json")
+        )
         // Prepare mock response
         val responseJson = """
             {
