@@ -3,6 +3,7 @@ package com.hurra.s2s
 import android.content.Context
 import android.util.Log
 import android.webkit.WebSettings
+import androidx.annotation.Keep
 import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
@@ -24,7 +25,7 @@ import java.lang.reflect.Type
  */
 object NetworkClient {
     private const val TAG = "HurraS2SSDK"
-    private const val BASE_URL = "https://s2s.hurra.com/"
+    private var BASE_URL = "https://s2s.hurra.com/"
     
     // Force debug logging for tests
     private val isDebug = BuildConfig.DEBUG || isTestEnvironment()
@@ -77,13 +78,13 @@ object NetworkClient {
         .writeTimeout(5, TimeUnit.SECONDS)
         .build()
     
-    private val retrofit = Retrofit.Builder()
+    private var retrofit = Retrofit.Builder()
         .baseUrl(BASE_URL)
         .client(okHttpClient)
         .addConverterFactory(MoshiConverterFactory.create(moshi))
         .build()
     
-    private val apiService = retrofit.create(ApiService::class.java)
+    private var apiService = retrofit.create(ApiService::class.java)
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     
     /**
@@ -128,14 +129,14 @@ object NetworkClient {
             
             if (response.isSuccessful) {
                 EventResponse(
-                    success = true, 
+                    success = true,
                     statusCode = response.code(),
                     responseBody = responseBodyString
                 )
             } else {
                 Log.e(TAG, "API request failed with code: ${response.code()}")
                 EventResponse(
-                    success = false, 
+                    success = false,
                     statusCode = response.code(),
                     responseBody = responseBodyString
                 )
@@ -157,6 +158,127 @@ object NetworkClient {
             false
         }
     }
+
+    // For testing purposes only
+    internal fun overrideBaseUrl(url: String) {
+        Log.d(TAG, "Overriding base URL to: $url")
+        if (isTestEnvironment()) {
+            BASE_URL = url
+            // Recreate the retrofit instance with the new base URL
+            retrofit = Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .client(okHttpClient)
+                .addConverterFactory(MoshiConverterFactory.create(moshi))
+                .build()
+
+            apiService = retrofit.create(ApiService::class.java)
+        }
+    }
+
+    /**
+     * Make a GET request to the API
+     * @param url The URL to get from
+     * @param headers The headers to include in the request
+     * @return The response from the API
+     */
+    suspend fun get(
+        url: String,
+        headers: Map<String, String>
+    ): EventResponse {
+        return try {
+            // Log the request in debug mode
+            if (isDebug) {
+                Log.d(TAG, "GET Request URL: $url")
+                Log.d(TAG, "Request headers: $headers")
+            }
+
+            val response = apiService.getRequest(url, headers)
+            val responseBodyString = response.body()?.string() ?: response.errorBody()?.string()
+
+            if (isDebug) {
+                Log.d(TAG, "Response code: ${response.code()}")
+                Log.d(TAG, "Response body: $responseBodyString")
+            }
+
+            if (response.isSuccessful) {
+                EventResponse(
+                    success = true,
+                    statusCode = response.code(),
+                    responseBody = responseBodyString
+                )
+            } else {
+                Log.e(TAG, "API request failed with code: ${response.code()}")
+                EventResponse(
+                    success = false,
+                    statusCode = response.code(),
+                    responseBody = responseBodyString
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error making GET request", e)
+            throw e
+        }
+    }
+
+    /**
+     * Make a PUT request to the API
+     * @param url The URL to put to
+     * @param headers The headers to include in the request
+     * @param body The body of the request
+     * @return The response from the API
+     */
+    suspend fun put(
+        url: String,
+        headers: Map<String, String>,
+        body: Map<String, Any>
+    ): EventResponse {
+        return try {
+            // Create a type for Map<String, Any>
+            val mapType: Type = Types.newParameterizedType(
+                Map::class.java,
+                String::class.java,
+                Any::class.java
+            )
+            val adapter = moshi.adapter<Map<String, Any>>(mapType)
+
+            // Serialize the body to JSON
+            val jsonBody = adapter.toJson(body)
+            val requestBody = jsonBody.toRequestBody(jsonMediaType)
+
+            // Log the request body in debug mode
+            if (isDebug) {
+                Log.d(TAG, "PUT Request URL: $url")
+                Log.d(TAG, "Request headers: $headers")
+                Log.d(TAG, "Request body: $jsonBody")
+            }
+
+            val response = apiService.putRequest(url, headers, requestBody)
+            val responseBodyString = response.body()?.string() ?: response.errorBody()?.string()
+
+            if (isDebug) {
+                Log.d(TAG, "Response code: ${response.code()}")
+                Log.d(TAG, "Response body: $responseBodyString")
+            }
+
+            if (response.isSuccessful) {
+                EventResponse(
+                    success = true,
+                    statusCode = response.code(),
+                    responseBody = responseBodyString
+                )
+            } else {
+                Log.e(TAG, "API request failed with code: ${response.code()}")
+                EventResponse(
+                    success = false,
+                    statusCode = response.code(),
+                    responseBody = responseBodyString
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error making PUT request", e)
+            throw e
+        }
+    }
 }
 
 /**
@@ -167,3 +289,112 @@ data class EventResponse(
     val statusCode: Int,
     val responseBody: String? = null
 )
+
+// consent api responses
+data class ErrorResponse(
+    val error: String
+)
+
+/* consentStatus */
+data class ConsentStatus(
+    val userPreferences: String?,
+    val vendors: Map<String, Int>?,
+    val externalVendors: Map<String, Int>?,
+    val statusesReasons: Map<String, String>?,
+    val acceptedVendorIds: List<String>?,
+    val declinedVendorIds: List<String>?,
+    val acceptedExternalVendorIds: List<String>?,
+    val declinedExternalVendorIds: List<String>?,
+    val showConsentBanner: Boolean?
+)
+
+@Keep
+data class Vendor(
+    val name: String?,
+    val vendorId: String?,
+    val externalVendorId: String?,
+    val categoryName: String?,
+    val legalBasis: String?,
+    val defaultStatus: Int?
+)
+
+data class Category(
+    val categoryName: String,
+    val categoryId: Int,
+    val vendorIds: List<String>,
+    val externalVendorIds: List<String>?
+)
+
+data class Translations(
+    val language: String?,
+    val availableLanguages: List<String>?,
+    val consentBar: ConsentBar?,
+    val privacyCenter: PrivacyCenter?,
+    val categories: List<CategoryInfo>?,
+    val vendors: List<VendorInfo>?
+)
+
+data class ConsentBar(
+    val header: String?,
+    val text: String?,
+    val bottomText: String?,
+    val buttons: Map<String, ConsentBarButton>?,
+    val cookiePolicy: ConsentBarPolicy?,
+    val privacyPolicy: ConsentBarPolicy?
+)
+
+data class ConsentBarButton(
+    val inline: Int?,
+    val label: String?,
+    val inlineToken: String?
+)
+
+data class ConsentBarPolicy(
+    val inline: Int?,
+    val label: String?,
+    val url: String?,
+    val inlineToken: String?
+)
+
+data class PrivacyCenter(
+    val header: String?,
+    val info: PrivacyCenterInfo?,
+    val subHeader: String?,
+    val buttons: Map<String, PrivacyCenterButton>?,
+    val cookiePolicy: PrivacyCenterPolicy?,
+    val privacyPolicy: PrivacyCenterPolicy?
+)
+
+data class PrivacyCenterInfo(
+    val text: String?,
+    val link: String?
+)
+
+data class PrivacyCenterButton(
+    val label: String?,
+    val url: String?
+)
+
+data class PrivacyCenterPolicy(
+    val label: String?,
+    val url: String?
+)
+
+data class CategoryInfo(
+    val categoryId: Int?,
+    val categoryName: String?,
+    val label: String?,
+    val description: String?
+)
+
+data class VendorInfo(
+    val name: String?,
+    val vendorId: String?,
+    val externalVendorId: String?,
+    val categoryName: String?,
+    val description: String?,
+    val cookiePolicy: String?,
+    val privacyPolicy: String?,
+    val optOut: String?
+)
+

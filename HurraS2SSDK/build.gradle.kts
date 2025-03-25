@@ -48,7 +48,7 @@ android {
     }
 }
 
-val libraryVersion = "1.0.1"
+val libraryVersion = "1.1.0"
 group = "com.hurra.s2s"
 version = libraryVersion
 
@@ -69,6 +69,15 @@ dependencies {
     testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+
+    // Testing dependencies
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.6.0")
+    testImplementation("org.mockito:mockito-core:3.11.2")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:3.2.0")
+    testImplementation("androidx.test:core:1.4.0")
+    testImplementation("org.robolectric:robolectric:4.10.3")
+    testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
 }
 
 publishing {
@@ -94,4 +103,11 @@ publishing {
             }
         }
     }
+}
+
+tasks.withType<Test> {
+    jvmArgs = listOf("-Djava.awt.headless=true", "-Drobolectric.logging=stdout")
+
+    systemProperty("robolectric.dependency.repo.id", "mavenCentral")
+    systemProperty("robolectric.dependency.repo.url", "https://repo1.maven.org/maven2")
 }
