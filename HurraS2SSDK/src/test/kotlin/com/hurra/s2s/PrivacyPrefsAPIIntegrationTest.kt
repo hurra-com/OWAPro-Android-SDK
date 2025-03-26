@@ -1,19 +1,21 @@
 package com.hurra.s2s
 
-import android.content.ContentResolver
+//import android.content.ContentResolver
 import android.content.Context
 import android.util.Log
-import android.webkit.WebSettings
 import android.webkit.URLUtil
-import io.mockk.*
+import android.webkit.WebSettings
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import org.junit.Assume
-import java.util.UUID
 
 /**
  * Integration test for PrivacyPrefsAPI that makes actual API requests.
@@ -74,7 +76,7 @@ class PrivacyPrefsAPIIntegrationTest {
     private lateinit var context: Context
     // private lateinit var sharedPrefs: SharedPreferences
     // private lateinit var editor: SharedPreferences.Editor
-    private lateinit var contentResolver: ContentResolver
+//    private lateinit var contentResolver: ContentResolver
     
     @Before
     fun setup() {
@@ -112,9 +114,9 @@ class PrivacyPrefsAPIIntegrationTest {
         assertTrue(response.showConsentBanner == true)
         // val pprefs = privacyPrefsAPI.getPrivacyPrefs()
         // Log.d("PrivacyPrefsAPIIntegrationTest", "pprefs: $pprefs")
-        assertTrue(response.showConsentBanner == privacyPrefsAPI.shouldShowConsentBanner())
+        assertEquals(response.showConsentBanner, privacyPrefsAPI.shouldShowConsentBanner())
         assertTrue(response.userPreferences == null)
-        assertTrue(response.userPreferences == privacyPrefsAPI.getPrivacyPrefs()?.getUserPreferences())
+        assertTrue(privacyPrefsAPI.getPrivacyPrefs()?.getUserPreferences() == null)
         assertTrue(response.vendors?.size!! > 0)
         // assertTrue(response.externalVendors?.size!! > 0)
         assertTrue(response.statusesReasons != null)
@@ -129,9 +131,9 @@ class PrivacyPrefsAPIIntegrationTest {
         val response2 = result2.getOrNull()!!
         // Log.d("PrivacyPrefsAPIIntegrationTest", "Response2: $response2")
         assertTrue(response2.showConsentBanner == null)
-        assertTrue(privacyPrefsAPI.shouldShowConsentBanner() == false)
+        assertTrue(!privacyPrefsAPI.shouldShowConsentBanner())
         assertTrue(response2.userPreferences != null)
-        assertTrue(response2.userPreferences == pprefs?.getUserPreferences())
+        assertEquals(response2.userPreferences, pprefs?.getUserPreferences())
         assertTrue(response2.vendors?.size!! > 0)
         assertTrue(response2.statusesReasons != null)
         assertTrue(response2.acceptedVendorIds != null)
@@ -140,12 +142,12 @@ class PrivacyPrefsAPIIntegrationTest {
         assertTrue(response2.declinedVendorIds?.size!! == 0)
 
 
-        val testVendorId = TestCredentials.getVendorId()!!
+        val testVendorId = TestCredentials.getVendorId()
         // Test getVendors
         val vendors = privacyPrefsAPI.getVendorsDetails()
         assertTrue(vendors.isSuccess, "API call should succeed")
         val vendorsResponse = vendors.getOrNull()!!
-        assertTrue(vendorsResponse.size > 0)
+        assertTrue(vendorsResponse.isNotEmpty())
         if (testVendorId != null) {
             assertTrue(vendorsResponse.any { it.vendorId == testVendorId }, "Vendor $testVendorId not found in response")
         }
@@ -156,20 +158,20 @@ class PrivacyPrefsAPIIntegrationTest {
             val vendor = privacyPrefsAPI.getVendorDetails(testVendorId)
             assertTrue(vendor.isSuccess, "API call should succeed")
             val vendorResponse = vendor.getOrNull()!!
-            assertTrue(vendorResponse.vendorId == testVendorId)
+            assertEquals(vendorResponse.vendorId, testVendorId)
             assertTrue(vendorResponse.name != null)
             assertTrue(vendorResponse.defaultStatus != null)
             assertTrue(vendorResponse.categoryName != null)
             assertTrue(vendorResponse.legalBasis != null)
         }
 
-        val externalVendorId = TestCredentials.getExternalVendorId()!!
+        val externalVendorId = TestCredentials.getExternalVendorId()
         if (externalVendorId != null) {
             val result3 = privacyPrefsAPI.getVendorDetails(externalVendorId, PrivacyPrefsAPI.VendorType.EXTERNAL_VENDOR_ID)
             assertTrue(result3.isSuccess, "API call should succeed")
             val vendorResponse3 = result3.getOrNull()!!
             assertTrue(vendorResponse3.vendorId != null)
-            assertTrue(vendorResponse3.externalVendorId == externalVendorId)
+            assertEquals(vendorResponse3.externalVendorId, externalVendorId)
             assertTrue(vendorResponse3.name != null)
             assertTrue(vendorResponse3.defaultStatus != null)
             assertTrue(vendorResponse3.categoryName != null)
@@ -178,11 +180,11 @@ class PrivacyPrefsAPIIntegrationTest {
         val result4 = privacyPrefsAPI.getCategories()
         assertTrue(result4.isSuccess, "API call should succeed")
         val categoriesResponse = result4.getOrNull()!!
-        assertTrue(categoriesResponse.size > 0)
+        assertTrue(categoriesResponse.isNotEmpty())
         assertTrue(categoriesResponse.any { it.categoryId == 0 })
         assertTrue(categoriesResponse.any { it.categoryName == "ESSENTIAL" })
-        assertTrue(categoriesResponse.all { it.vendorIds != null })
-        assertTrue(categoriesResponse.all { it.vendorIds?.size!! > 0 })
+//        assertTrue(categoriesResponse.all { it.vendorIds != null })
+        assertTrue(categoriesResponse.all { it.vendorIds.isNotEmpty() })
 
         val result5 = privacyPrefsAPI.getTranslations()
         assertTrue(result5.isSuccess, "API call should succeed")
@@ -200,7 +202,7 @@ class PrivacyPrefsAPIIntegrationTest {
             val result6 = privacyPrefsAPI.getTranslations(language = otherLanguage)
             assertTrue(result6.isSuccess, "API call should succeed")
             val translationsResponse2 = result6.getOrNull()!!
-            assertTrue(translationsResponse2.language == otherLanguage)
+            assertEquals(translationsResponse2.language, otherLanguage)
         }
 
         val result7 = privacyPrefsAPI.getTranslations(fields = listOf("consentBar"))
