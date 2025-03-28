@@ -167,7 +167,7 @@ class PrivacyPrefsAPIIntegrationTest {
 
         val externalVendorId = TestCredentials.getExternalVendorId()
         if (externalVendorId != null) {
-            val result3 = privacyPrefsAPI.getVendorDetails(externalVendorId, PrivacyPrefsAPI.VendorType.EXTERNAL_VENDOR_ID)
+            val result3 = privacyPrefsAPI.getExternalVendorDetails(externalVendorId)
             assertTrue(result3.isSuccess, "API call should succeed")
             val vendorResponse3 = result3.getOrNull()!!
             assertTrue(vendorResponse3.vendorId != null)

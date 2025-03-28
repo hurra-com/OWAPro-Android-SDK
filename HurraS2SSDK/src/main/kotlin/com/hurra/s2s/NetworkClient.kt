@@ -318,6 +318,15 @@ data class Vendor(
     val defaultStatus: Int?
 )
 
+data class ExternalVendor(
+    val name: List<String>?,
+    val vendorId: List<String>?,
+    val externalVendorId: String?,
+    val categoryName: List<String>?,
+    val legalBasis: List<String>?,
+    val defaultStatus: List<Int>?
+)
+
 data class Category(
     val categoryName: String,
     val categoryId: Int,

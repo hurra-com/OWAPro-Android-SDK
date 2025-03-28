@@ -48,7 +48,7 @@ android {
     }
 }
 
-val libraryVersion = "1.1.1"
+val libraryVersion = "1.1.2"
 group = "com.hurra.s2s"
 version = libraryVersion
 

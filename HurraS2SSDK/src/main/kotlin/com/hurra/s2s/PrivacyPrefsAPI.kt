@@ -156,18 +156,25 @@ class PrivacyPrefsAPI(
         )
     }
 
-    enum class VendorType(val value: String) {
-        VENDOR_ID("vendorId"),
-        EXTERNAL_VENDOR_ID("externalVendorId")
-    }
-
-    suspend fun getVendorDetails(vendorId: String, vendorType: VendorType? = VendorType.VENDOR_ID): Result<Vendor> {
+    suspend fun getVendorDetails(vendorId: String): Result<Vendor> {
         if (!checkApiAvailability()) {
             return Result.failure(Exception(apiNotAvailableReason))
         }
         return sendRequest<Vendor>(
             method = "GET",
-            endpoint = "vendor/${vendorType?.value}/$vendorId",
+            endpoint = "vendor/vendorId/$vendorId",
+            queryParams = mapOf(),
+            requestBody = mapOf()
+        )
+    }
+
+    suspend fun getExternalVendorDetails(vendorId: String): Result<ExternalVendor> {
+        if (!checkApiAvailability()) {
+            return Result.failure(Exception(apiNotAvailableReason))
+        }
+        return sendRequest<ExternalVendor>(
+            method = "GET",
+            endpoint = "vendor/externalVendorId/$vendorId",
             queryParams = mapOf(),
             requestBody = mapOf()
         )

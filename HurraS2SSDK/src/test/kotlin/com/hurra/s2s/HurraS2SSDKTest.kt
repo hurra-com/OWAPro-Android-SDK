@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 import kotlin.test.assertEquals
+import android.util.Log
 
 class HurraS2SSDKTest {
     private lateinit var context: Context
@@ -61,7 +62,7 @@ class HurraS2SSDKTest {
             )
         } returns EventResponse(success = true, statusCode = 200)
     }
-    
+
     @Test
     fun `test initialization with custom user ID`() {
         // Given
@@ -84,7 +85,7 @@ class HurraS2SSDKTest {
                     body = match<Map<String, Any>> { it["user_id"] == "custom_user_id" }
                 )
             } returns EventResponse(success = true, statusCode = 200)
-
+            assertEquals("custom_user_id", sdk.getUserId())
             val result = sdk.trackEvent("test_event")
             assert(result.isSuccess)
 
@@ -104,15 +105,14 @@ class HurraS2SSDKTest {
         every { 
             Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) 
         } returns "advertiser_id"
-        
+
         val sdk = HurraS2SSDK(
             context = context,
             accountId = "account_id",
             apiKey = "api_key",
             useAdvertiserId = true
         )
-        
-        // When/Then - verify the user ID is set correctly
+
         runBlocking {
             coEvery { 
                 NetworkClient.post(
@@ -121,10 +121,13 @@ class HurraS2SSDKTest {
                     body = match<Map<String, Any>> { it["user_id"] == "advertiser_id" }
                 )
             } returns EventResponse(success = true, statusCode = 200)
-
             val result = sdk.trackEvent("test_event")
             assert(result.isSuccess)
-            
+
+            // Should now be using our mocked advertising ID
+            val userId = sdk.getUserId()
+            assertEquals("advertiser_id", userId)
+
             coVerify { 
                 NetworkClient.post(
                     url = any(),

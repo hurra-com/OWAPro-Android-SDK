@@ -83,11 +83,19 @@ suspend fun getVendorsDetails(): Result<List<Vendor>>
 Returns a list of all vendors available in the system.
 
 ```kotlin
-suspend fun getVendorDetails(vendorId: String, vendorType: VendorType? = VendorType.VENDOR_ID): Result<Vendor>
+suspend fun getVendorDetails(vendorId: String): Result<Vendor>
 ```
 Parameters:
 * vendorId: Identifier for the vendor
-* vendorType: Type of vendor ID (VENDOR_ID or EXTERNAL_VENDOR_ID)
+Returns the vendor details for the given vendor ID.
+
+```kotlin
+suspend fun getExternalVendorDetails(vendorId: String): Result<ExternalVendor>
+```
+Parameters:
+* vendorId: Identifier for the external vendor
+Returns the external vendor details for the given vendor ID.
+
 
 ## Categories
 
@@ -137,6 +145,18 @@ data class Vendor(
 )
 ```
 
+### ExternalVendor
+
+```kotlin
+data class ExternalVendor(
+    val name: List<String>?,
+    val vendorId: List<String>?,
+    val externalVendorId: String?,
+    val categoryName: List<String>?,
+    val legalBasis: List<String>?,
+    val defaultStatus: List<Int>?
+)
+```
 ### Category
 
 ```kotlin

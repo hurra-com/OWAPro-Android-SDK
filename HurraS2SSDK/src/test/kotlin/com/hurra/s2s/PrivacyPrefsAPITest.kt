@@ -259,6 +259,58 @@ class PrivacyPrefsAPITest : BaseRobolectricTest() {
         assertEquals(1, vendor.defaultStatus)
     }
 
+    @Test
+    fun `getExternalVendorDetails returns correctly parsed list`() = runBlocking {
+
+        val apiStatusResponse = """
+            {
+                "vendors": {"vendor1": 1, "vendor2": 0},
+                "externalVendors": {"ext1": 1},
+                "showConsentBanner": true
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(apiStatusResponse)
+                .addHeader("Content-Type", "application/json")
+        )
+        // Prepare mock response
+        val responseJson = """
+            {
+                "name": ["Vendor 1"],
+                "vendorId": ["v1"],
+                "externalVendorId": "ext1",
+                "categoryName": ["Analytics"],
+                "legalBasis": ["consent"],
+                "defaultStatus": [1]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(responseJson)
+                .addHeader("Content-Type", "application/json")
+        )
+
+        // Call the API
+        val result = api.getExternalVendorDetails("v1")
+
+        // Verify the result
+        assertTrue(result.isSuccess)
+        val vendor = result.getOrNull()
+        assertNotNull(vendor)
+//         Log.d("PrivacyPrefsAPITest", "getExternalVendorDetails: $vendor")
+        assertEquals("Vendor 1",   vendor.name!![0])
+        assertEquals("v1", vendor.vendorId!![0])
+        assertEquals("ext1", vendor.externalVendorId)
+        assertEquals("Analytics", vendor.categoryName!![0])
+        assertEquals("consent", vendor.legalBasis!![0])
+        assertEquals(1, vendor.defaultStatus!![0])
+    }
+
    @Test
    fun `getCategories returns correctly parsed categories`() = runBlocking {
 

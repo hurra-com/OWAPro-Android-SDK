@@ -7,6 +7,7 @@ import kotlinx.coroutines.CancellationException
 import java.util.UUID
 import android.webkit.URLUtil
 
+
 /**
  * Hurra S2S SDK for tracking events and views
  * @param context Android context
@@ -15,7 +16,6 @@ import android.webkit.URLUtil
  * @param useAdvertiserId Whether to use advertiser ID or generate a unique ID
  * @param customUserId Optional custom user ID to use for tracking
  * @param testing Whether to enable testing mode
- * @param maxRetries Maximum number of retries for failed requests (default: 2)
  */
 class HurraS2SSDK(
     private val context: Context,
@@ -24,7 +24,6 @@ class HurraS2SSDK(
     private val useAdvertiserId: Boolean,
     private val customUserId: String? = null,
     private val testing: Boolean = false,
-    private val maxRetries: Int = 2
 ) {
     private val TAG = "HurraS2SSDK"
     private var userId: String = ""
@@ -38,20 +37,15 @@ class HurraS2SSDK(
         
         userId = if (useAdvertiserId) {
             // Use Android Advertising ID
-            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: getUserId()
+            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: getSeflManagedUserId()
         } else {
-            if (customUserId != null) {
-                customUserId
-            } else {
-                // Generate or retrieve stored user ID
-                getUserId()
-            }
+            customUserId ?: getSeflManagedUserId()
         }
         
         Log.d(TAG, "Initialized with user ID: $userId")
     }
     
-    private fun getUserId(): String {
+    private fun getSeflManagedUserId(): String {
         // Get stored ID or generate new one
         val prefs = context.getSharedPreferences("hurra_s2s_prefs", Context.MODE_PRIVATE)
         var id = prefs.getString("user_id", null)
@@ -61,6 +55,11 @@ class HurraS2SSDK(
         }
         return id
     }
+
+    fun getUserId(): String {
+        return userId
+    }
+
 
     /**
      * Check if a URL is an Android app URL
@@ -118,7 +117,7 @@ class HurraS2SSDK(
         )
 
         if (previousView != null) {
-            var formattedPreviousView = transformToAppUrl(previousView!!)
+            val formattedPreviousView = transformToAppUrl(previousView!!)
             requestBody["referer"] = formattedPreviousView
         }
 
@@ -159,12 +158,10 @@ class HurraS2SSDK(
     /**
      * Send a request to the API
      * @param requestBody The prepared request body
-     * @param retryCount Current retry count (default: 0)
      * @return Result containing the response or an exception
      */
     private suspend fun sendRequest(
-        requestBody: Map<String, Any>,
-        retryCount: Int = 0
+        requestBody: Map<String, Any>
     ): Result<EventResponse> {
         return try {
             // Implementation of actual network request
@@ -184,11 +181,6 @@ class HurraS2SSDK(
             throw e
         } catch (e: Exception) {
             Log.e(TAG, "Error making request: ${e.message}", e)
-            // Retry logic
-            if (retryCount < maxRetries) {
-                Log.d(TAG, "Retrying request (${retryCount + 1}/$maxRetries)")
-                return sendRequest(requestBody, retryCount + 1)
-            }
             Result.failure(e)
         }
     }
