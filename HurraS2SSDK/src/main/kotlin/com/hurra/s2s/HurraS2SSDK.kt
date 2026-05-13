@@ -32,9 +32,16 @@ class HurraS2SSDK(
     private val packageName: String = context.packageName
     
     init {
-        // Initialize NetworkClient with context to get default User-Agent
         NetworkClient.initialize(context)
-        
+
+        try {
+            val appName = context.applicationInfo.loadLabel(context.packageManager).toString()
+            val appVersion = context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "unknown"
+            NetworkClient.setAppInfo(appName, appVersion)
+        } catch (e: Exception) {
+            Log.w(TAG, "Could not auto-detect app info: ${e.message}")
+        }
+
         userId = if (useAdvertiserId) {
             // Use Android Advertising ID
             Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: getSeflManagedUserId()
@@ -58,6 +65,16 @@ class HurraS2SSDK(
 
     fun getUserId(): String {
         return userId
+    }
+
+    /**
+     * Set the name and version of the application that is integrating the SDK.
+     * This will be appended to the User-Agent header on all API calls.
+     * @param name The application name
+     * @param version The application version string
+     */
+    fun setAppInfo(name: String, version: String) {
+        NetworkClient.setAppInfo(name, version)
     }
 
 

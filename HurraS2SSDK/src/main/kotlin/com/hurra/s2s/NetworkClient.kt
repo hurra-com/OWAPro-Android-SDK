@@ -43,7 +43,8 @@ object NetworkClient {
     }
     
     private var defaultUserAgent: String? = null
-    
+    private var appInfo: String? = null
+
     /**
      * Initialize the NetworkClient with the application context
      * @param context The application context
@@ -54,19 +55,35 @@ object NetworkClient {
             Log.d(TAG, "Default User-Agent: $defaultUserAgent")
         }
     }
-    
+
+    /**
+     * Set the integrating application name and version to be appended to the User-Agent header.
+     * @param name The application name
+     * @param version The application version
+     */
+    fun setAppInfo(name: String, version: String) {
+        appInfo = "$name/$version"
+        if (isDebug) {
+            Log.d(TAG, "App info set: $appInfo")
+        }
+    }
+
     private val userAgentInterceptor = Interceptor { chain ->
         val originalRequest = chain.request()
-        
-        // Only add User-Agent if we have initialized it
-        val newRequest = if (defaultUserAgent != null) {
+
+        val ua = buildList {
+            defaultUserAgent?.let { add(it) }
+            appInfo?.let { add(it) }
+        }.joinToString(" ").ifEmpty { null }
+
+        val newRequest = if (ua != null) {
             originalRequest.newBuilder()
-                .header("User-Agent", defaultUserAgent!!)
+                .header("User-Agent", ua)
                 .build()
         } else {
             originalRequest
         }
-        
+
         chain.proceed(newRequest)
     }
     

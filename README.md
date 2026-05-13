@@ -9,7 +9,7 @@ Android SDK for tracking events and views in your application.
 - View tracking with referrer support
 - Automatic user ID generation and storage
 - Configurable privacy preferences
-- Default User-Agent support
+- Default User-Agent support with optional app info appended
 
 ## Installation and usage
 

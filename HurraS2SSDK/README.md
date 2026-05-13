@@ -106,6 +106,17 @@ val sdk = HurraS2SSDK(
 )
 ```
 
+### Set Application Info
+
+To identify your application in API requests, call `setAppInfo` after initialization. The provided name and version will be appended to the `User-Agent` header on every API call:
+
+```kotlin
+sdk.setAppInfo(name = "MyApp", version = "2.3.0")
+// Resulting User-Agent: Mozilla/5.0 (...) MyApp/2.3.0
+```
+
+This is optional. If not called, only the device's default User-Agent is sent.
+
 ### Privacy Preferences
 
 The SDK supports detailed privacy preferences configuration through the PrivacyPrefs object:
@@ -202,7 +213,7 @@ Requests are sent to: `https://s2s.hurra.com/rt/?cid=account_id&app=1`
 
 Headers:
 - `Authorization: Bearer your-api-key`
-- `User-Agent`: Device's default User-Agent
+- `User-Agent`: Device's default User-Agent, with `AppName/version` appended when `setAppInfo` has been called
 
 ## Response Format
 

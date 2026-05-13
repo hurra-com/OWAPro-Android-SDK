@@ -3,6 +3,9 @@ package com.hurra.s2s
 import android.content.ContentResolver
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.webkit.URLUtil
 import android.webkit.WebSettings
@@ -18,43 +21,49 @@ class HurraS2SSDKTest {
     private lateinit var sharedPrefs: SharedPreferences
     private lateinit var editor: SharedPreferences.Editor
     private lateinit var contentResolver: ContentResolver
-    
+    private lateinit var packageManager: PackageManager
+    private lateinit var applicationInfo: ApplicationInfo
+
     @Before
     fun setup() {
         context = mockk()
         sharedPrefs = mockk()
         editor = mockk()
         contentResolver = mockk()
-        
+        packageManager = mockk()
+        applicationInfo = mockk()
+
         mockkStatic(Settings.Secure::class)
         mockkStatic(WebSettings::class)
         mockkObject(NetworkClient)
-        
+
         every { context.getSharedPreferences(any(), any()) } returns sharedPrefs
         every { context.contentResolver } returns contentResolver
         every { context.packageName } returns "com.test.app"
+        every { context.packageManager } returns packageManager
+        every { context.applicationInfo } returns applicationInfo
         every { sharedPrefs.edit() } returns editor
         every { editor.putString(any(), any()) } returns editor
         every { editor.apply() } just Runs
-        
-        // For user ID persistence
+
         every { sharedPrefs.getString("user_id", null) } returns "test_user_id"
-        
-        // Set up logging redirection
+
         TestLogger.setup()
-        
-        // Add this mock
+
         every { WebSettings.getDefaultUserAgent(any()) } returns "test-user-agent"
 
-        // Mock URLUtil.isValidUrl
+        val packageInfo = PackageInfo().apply { versionName = "1.0.0" }
+        every { applicationInfo.loadLabel(packageManager) } returns "TestApp"
+        every { packageManager.getPackageInfo("com.test.app", 0) } returns packageInfo
+        every { NetworkClient.setAppInfo(any(), any()) } just Runs
+
         mockkStatic(URLUtil::class)
         every { URLUtil.isValidUrl(any()) } answers {
             val url = arg<String>(0)
             url.startsWith("http://") || url.startsWith("https://") || url.startsWith("android-app://")
         }
 
-        // Add default mock for NetworkClient.post
-        coEvery { 
+        coEvery {
             NetworkClient.post(
                 url = any(),
                 headers = any(),
@@ -245,6 +254,32 @@ class HurraS2SSDKTest {
         }
     }
     
+    @Test
+    fun `test app info is auto-collected from context on init`() {
+        HurraS2SSDK(
+            context = context,
+            accountId = "account_id",
+            apiKey = "api_key",
+            useAdvertiserId = false
+        )
+
+        verify { NetworkClient.setAppInfo("TestApp", "1.0.0") }
+    }
+
+    @Test
+    fun `test setAppInfo overrides auto-collected app info`() {
+        val sdk = HurraS2SSDK(
+            context = context,
+            accountId = "account_id",
+            apiKey = "api_key",
+            useAdvertiserId = false
+        )
+
+        sdk.setAppInfo("MyApp", "2.3.0")
+
+        verify { NetworkClient.setAppInfo("MyApp", "2.3.0") }
+    }
+
     @Test
     fun `test testing mode adds debug header`() = runBlocking {
         // Given
