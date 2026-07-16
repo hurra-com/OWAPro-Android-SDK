@@ -119,7 +119,6 @@ class HurraS2SSDKIntegrationTest {
             context = context,
             accountId = accountId,
             apiKey = apiKey,
-            useAdvertiserId = false,
             testing = true
         )
 
@@ -153,7 +152,6 @@ class HurraS2SSDKIntegrationTest {
             context = context,
             accountId = accountId,
             apiKey = apiKey,
-            useAdvertiserId = false,
             testing = true
         )
 
@@ -188,7 +186,6 @@ class HurraS2SSDKIntegrationTest {
             context = context,
             accountId = TestCredentials.getAccountId()!!,
             apiKey = TestCredentials.getApiKey()!!,
-            useAdvertiserId = false,
             testing = true
         )
 
@@ -233,7 +230,6 @@ class HurraS2SSDKIntegrationTest {
             context = context,
             accountId = accountId,
             apiKey = apiKey,
-            useAdvertiserId = false,
             testing = true
         )
 

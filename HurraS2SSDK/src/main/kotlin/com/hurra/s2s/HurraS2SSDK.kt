@@ -21,7 +21,7 @@ class HurraS2SSDK(
     private val context: Context,
     private val accountId: String,
     private val apiKey: String,
-    private val useAdvertiserId: Boolean,
+    private val useAdvertiserId: Boolean = false,
     private val customUserId: String? = null,
     private val testing: Boolean = false,
 ) {

@@ -79,7 +79,6 @@ class HurraS2SSDKTest {
             context = context,
             accountId = "account_id",
             apiKey = "api_key",
-            useAdvertiserId = false,
             customUserId = "custom_user_id"
         )
         
@@ -153,10 +152,9 @@ class HurraS2SSDKTest {
         val sdk = HurraS2SSDK(
             context = context,
             accountId = "account_id",
-            apiKey = "api_key",
-            useAdvertiserId = false
+            apiKey = "api_key"
         )
-        
+
         // When/Then - verify the user ID is set correctly
         runBlocking {
             coEvery { 
@@ -186,10 +184,9 @@ class HurraS2SSDKTest {
         val sdk = HurraS2SSDK(
             context = context,
             accountId = "account_id",
-            apiKey = "api_key",
-            useAdvertiserId = false
+            apiKey = "api_key"
         )
-        
+
         // When
         val result = sdk.trackEvent(
             eventType = "test_event",
@@ -224,10 +221,9 @@ class HurraS2SSDKTest {
         val sdk = HurraS2SSDK(
             context = context,
             accountId = "account_id",
-            apiKey = "api_key",
-            useAdvertiserId = false
+            apiKey = "api_key"
         )
-        
+
         // When
         val result = sdk.trackView(
             eventData = mapOf("screen_name" to "test_screen"),
@@ -259,8 +255,7 @@ class HurraS2SSDKTest {
         HurraS2SSDK(
             context = context,
             accountId = "account_id",
-            apiKey = "api_key",
-            useAdvertiserId = false
+            apiKey = "api_key"
         )
 
         verify { NetworkClient.setAppInfo("TestApp", "1.0.0") }
@@ -271,8 +266,7 @@ class HurraS2SSDKTest {
         val sdk = HurraS2SSDK(
             context = context,
             accountId = "account_id",
-            apiKey = "api_key",
-            useAdvertiserId = false
+            apiKey = "api_key"
         )
 
         sdk.setAppInfo("MyApp", "2.3.0")
@@ -287,7 +281,6 @@ class HurraS2SSDKTest {
             context = context,
             accountId = "account_id",
             apiKey = "api_key",
-            useAdvertiserId = false,
             testing = true
         )
         
