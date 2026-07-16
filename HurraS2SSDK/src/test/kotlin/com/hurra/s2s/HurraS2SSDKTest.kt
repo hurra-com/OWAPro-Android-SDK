@@ -6,9 +6,9 @@ import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.provider.Settings
 import android.webkit.URLUtil
 import android.webkit.WebSettings
+import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import io.mockk.*
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -33,7 +33,6 @@ class HurraS2SSDKTest {
         packageManager = mockk()
         applicationInfo = mockk()
 
-        mockkStatic(Settings.Secure::class)
         mockkStatic(WebSettings::class)
         mockkObject(NetworkClient)
 
@@ -110,9 +109,11 @@ class HurraS2SSDKTest {
     @Test
     fun `test initialization with advertiser ID`() {
         // Given
-        every { 
-            Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) 
-        } returns "advertiser_id"
+        mockkStatic(AdvertisingIdClient::class)
+        val adInfo = mockk<AdvertisingIdClient.Info>()
+        every { adInfo.id } returns "test_gaid"
+        every { adInfo.isLimitAdTrackingEnabled } returns false
+        every { AdvertisingIdClient.getAdvertisingIdInfo(any()) } returns adInfo
 
         val sdk = HurraS2SSDK(
             context = context,
@@ -122,25 +123,24 @@ class HurraS2SSDKTest {
         )
 
         runBlocking {
-            coEvery { 
+            coEvery {
                 NetworkClient.post(
                     url = any(),
                     headers = any(),
-                    body = match<Map<String, Any>> { it["user_id"] == "advertiser_id" }
+                    body = match<Map<String, Any>> { it["user_id"] == "test_gaid" }
                 )
             } returns EventResponse(success = true, statusCode = 200)
             val result = sdk.trackEvent("test_event")
             assert(result.isSuccess)
 
-            // Should now be using our mocked advertising ID
             val userId = sdk.getUserId()
-            assertEquals("advertiser_id", userId)
+            assertEquals("test_gaid", userId)
 
-            coVerify { 
+            coVerify {
                 NetworkClient.post(
                     url = any(),
                     headers = any(),
-                    body = match<Map<String, Any>> { it["user_id"] == "advertiser_id" }
+                    body = match<Map<String, Any>> { it["user_id"] == "test_gaid" }
                 )
             }
         }

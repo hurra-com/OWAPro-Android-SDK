@@ -48,7 +48,7 @@ android {
     }
 }
 
-val libraryVersion = "1.1.3"
+val libraryVersion = "1.1.4"
 group = "com.hurra.s2s"
 version = libraryVersion
 
@@ -60,6 +60,8 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    implementation("com.google.android.gms:play-services-ads-identifier:18.1.0")
 
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-moshi:2.9.0")

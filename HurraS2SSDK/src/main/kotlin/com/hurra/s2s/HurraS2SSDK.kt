@@ -1,9 +1,11 @@
 package com.hurra.s2s
 
 import android.content.Context
-import android.provider.Settings
 import android.util.Log
+import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import java.util.UUID
 import android.webkit.URLUtil
 
@@ -43,8 +45,19 @@ class HurraS2SSDK(
         }
 
         userId = if (useAdvertiserId) {
-            // Use Android Advertising ID
-            Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID) ?: getSeflManagedUserId()
+            runBlocking(Dispatchers.IO) {
+                try {
+                    val adInfo = AdvertisingIdClient.getAdvertisingIdInfo(context)
+                    if (!adInfo.isLimitAdTrackingEnabled) {
+                        adInfo.id ?: getSeflManagedUserId()
+                    } else {
+                        getSeflManagedUserId()
+                    }
+                } catch (e: Exception) {
+                    Log.w(TAG, "Could not get advertising ID: ${e.message}")
+                    getSeflManagedUserId()
+                }
+            }
         } else {
             customUserId ?: getSeflManagedUserId()
         }

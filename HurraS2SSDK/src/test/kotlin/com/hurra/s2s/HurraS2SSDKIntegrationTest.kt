@@ -3,7 +3,6 @@ package com.hurra.s2s
 import android.content.ContentResolver
 import android.content.Context
 import android.content.SharedPreferences
-import android.provider.Settings
 import android.util.Log
 import android.webkit.WebSettings
 import android.webkit.URLUtil
@@ -92,19 +91,14 @@ class HurraS2SSDKIntegrationTest {
         sharedPrefs = mockk(relaxed = true)
         editor = mockk(relaxed = true)
         contentResolver = mockk()
-        
-        mockkStatic(Settings.Secure::class)
-        
+
         every { context.getSharedPreferences(any(), any()) } returns sharedPrefs
         every { context.contentResolver } returns contentResolver
         every { context.packageName } returns "com.hurra.testapp"
         every { sharedPrefs.edit() } returns editor
         every { editor.putString(any(), any()) } returns editor
         every { editor.apply() } just Runs
-        every { 
-            Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) 
-        } returns "test_device_id_for_integration"
-        
+
         // For user ID persistence
         every { sharedPrefs.getString("user_id", null) } returns "test_user_id"
     }
