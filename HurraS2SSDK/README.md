@@ -193,6 +193,49 @@ lifecycleScope.launch {
 }
 ```
 
+### Track View on Deep Link Open
+
+When the app is launched via a registered URL (deep link), pass the full URI — including its query string — as `currentView`. The SDK forwards it as-is, so all query parameters are preserved in the tracked URL.
+
+```kotlin
+// In the Activity that handles the deep link intent
+override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    handleDeepLink(intent)
+}
+
+// Also handle links that arrive while the app is already running
+override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    handleDeepLink(intent)
+}
+
+private fun handleDeepLink(intent: Intent) {
+    val uri = intent.data ?: return
+
+    // uri.toString() preserves the full URL with all query parameters, e.g.
+    // https://example.com/product?id=123&utm_source=email&utm_campaign=spring
+    lifecycleScope.launch {
+        sdk.trackView(currentView = uri.toString())
+    }
+}
+```
+
+If you need to attach additional event data alongside the URL parameters, pass it via `eventData`:
+
+```kotlin
+private fun handleDeepLink(intent: Intent) {
+    val uri = intent.data ?: return
+
+    lifecycleScope.launch {
+        sdk.trackView(
+            currentView = uri.toString(),
+            eventData = mapOf("referrer_source" to "deep_link")
+        )
+    }
+}
+```
+
 ## URL Format
 
 - If currentView is a valid URL, it will be used as-is
