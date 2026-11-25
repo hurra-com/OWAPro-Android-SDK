@@ -106,6 +106,73 @@ val sdk = HurraS2SSDK(
 )
 ```
 
+### Initialize SDK with your own domain
+
+```kotlin
+val sdk = HurraS2SSDK(
+    context = context,
+    accountId = BuildConfig.HURRA_S2S_ACCOUNT_ID,  // From local.properties
+    apiKey = BuildConfig.HURRA_S2S_API_KEY,        // From local.properties
+    baseUrl = "https://www.example.com/hc_s2s"     // See "Sending requests through your own domain"
+)
+```
+
+### Sending requests through your own domain
+
+By default the SDK sends its requests to `https://s2s.hurra.com`. You can send them through your own domain instead, with a reverse proxy that forwards them to `https://s2s.hurra.com/`. The app then talks to your domain, not to a third-party tracking domain.
+
+Pass the same `baseUrl` to `HurraS2SSDK` and to `PrivacyPrefsAPI`:
+
+```kotlin
+val baseUrl = "https://www.example.com/hc_s2s"
+
+val sdk = HurraS2SSDK(
+    context = context,
+    accountId = BuildConfig.HURRA_S2S_ACCOUNT_ID,
+    apiKey = BuildConfig.HURRA_S2S_API_KEY,
+    baseUrl = baseUrl
+)
+
+val api = PrivacyPrefsAPI(
+    context = context,
+    accountId = BuildConfig.HURRA_S2S_ACCOUNT_ID,
+    apiKey = BuildConfig.HURRA_S2S_API_KEY,
+    userId = sdk.getUserId(),
+    baseUrl = baseUrl
+)
+```
+
+- `baseUrl` must be an `https` URL with a host and without query or fragment; the constructors throw `IllegalArgumentException` otherwise. A trailing slash is optional.
+- Default: `HurraS2SSDK.DEFAULT_BASE_URL` (`https://s2s.hurra.com`).
+
+The proxy must forward these paths below the base URL to `https://s2s.hurra.com/`, with method, query string, headers and body unchanged:
+
+| Path | Used by |
+|------|---------|
+| `/rt/` | event and view tracking (`HurraS2SSDK`) |
+| `/consent-api/…` | consent API (`PrivacyPrefsAPI`) |
+
+and add these headers:
+
+| Header | Value |
+|--------|-------|
+| `X-Hurra-Client-IP` | IP address of the app user (the client that connected to the proxy) |
+| `X-Hurra-Proxy-Domain` | your domain, e.g. `www.example.com` |
+| `X-Hurra-Proxy-Path` | the path of the base URL, e.g. `/hc_s2s` |
+
+Example for nginx, for the base URL `https://www.example.com/hc_s2s`:
+
+```nginx
+location /hc_s2s/ {
+    proxy_pass https://s2s.hurra.com/;
+    proxy_set_header X-Hurra-Client-IP $remote_addr;
+    proxy_set_header X-Hurra-Proxy-Domain $host;
+    proxy_set_header X-Hurra-Proxy-Path "/hc_s2s";
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_connect_timeout 10s;
+}
+```
+
 ### Set Application Info
 
 To identify your application in API requests, call `setAppInfo` after initialization. The provided name and version will be appended to the `User-Agent` header on every API call:

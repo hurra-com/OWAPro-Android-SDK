@@ -11,6 +11,10 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 
 /**
  * API for managing privacy preferences and communicating with the server
+ * @param baseUrl Base URL that consent API requests are sent to, e.g. your own domain with a
+ * reverse proxy to the Hurra S2S server (`https://www.example.com/hc_s2s`). Must use https.
+ * A trailing slash is optional. Defaults to [HurraS2SSDK.DEFAULT_BASE_URL].
+ * @throws IllegalArgumentException if [baseUrl] is not a valid https URL
  */
 class PrivacyPrefsAPI(
     private val context: Context,
@@ -19,9 +23,10 @@ class PrivacyPrefsAPI(
     private val userId: String,
     private val testing: Boolean? = false,
     private var privacyPrefs: PrivacyPrefs? = null,
+    baseUrl: String = HurraS2SSDK.DEFAULT_BASE_URL,
 ) {
     private val TAG = "PrivacyPrefsAPI"
-    private var BASE_URL = "https://s2s.hurra.com"
+    private var BASE_URL = BaseUrl.normalize(baseUrl)
     private var showConsentBanner: Boolean? = null
     private var apiAvailable: Boolean? = null
     private var apiNotAvailableReason: String? = null
@@ -39,8 +44,15 @@ class PrivacyPrefsAPI(
         }
     }
 
+    // For testing purposes only (no validation, so that tests can use a local http server)
     internal fun setBaseUrl(url: String) {
         BASE_URL = url
+    }
+
+    internal fun buildUrl(endpoint: String, queryParams: Map<String, String>): String {
+        val queryString = if (queryParams.isEmpty()) "" else
+            "&" + queryParams.entries.joinToString("&") { "${it.key}=${it.value}" }
+        return "${BASE_URL}/consent-api/$accountId/$endpoint?app=1&user_id=${userId}${queryString}"
     }
 
     /**
@@ -221,10 +233,7 @@ class PrivacyPrefsAPI(
     ): Result<T> {
         return try {
             // Build the URL with query parameters
-            val queryString = if (queryParams.isEmpty()) "" else 
-                "&" + queryParams.entries.joinToString("&") { "${it.key}=${it.value}" }
-            
-            val url = "${BASE_URL}/consent-api/$accountId/$endpoint?app=1&user_id=${userId}${queryString}"
+            val url = buildUrl(endpoint, queryParams)
             
             // Prepare headers
             val headers = mutableMapOf<String, String>("Authorization" to "Bearer $apiKey")
@@ -304,10 +313,7 @@ class PrivacyPrefsAPI(
     ): Result<List<T>> {
         return try {
             // Build the URL with query parameters
-            val queryString = if (queryParams.isEmpty()) "" else 
-                "&" + queryParams.entries.joinToString("&") { "${it.key}=${it.value}" }
-            
-            val url = "${BASE_URL}/consent-api/$accountId/$endpoint?app=1&user_id=${userId}${queryString}"
+            val url = buildUrl(endpoint, queryParams)
             
             // Prepare headers
             val headers = mutableMapOf<String, String>("Authorization" to "Bearer $apiKey")

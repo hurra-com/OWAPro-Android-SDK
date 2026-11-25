@@ -308,4 +308,55 @@ class HurraS2SSDKTest {
             )
         }
     }
+
+    @Test
+    fun `test default base URL is used for tracking requests`() = runBlocking {
+        val sdk = HurraS2SSDK(
+            context = context,
+            accountId = "account_id",
+            apiKey = "api_key"
+        )
+
+        val result = sdk.trackEvent("test_event")
+        assert(result.isSuccess)
+
+        coVerify {
+            NetworkClient.post(
+                url = "https://s2s.hurra.com/rt/?cid=account_id&app=1",
+                headers = any(),
+                body = any()
+            )
+        }
+    }
+
+    @Test
+    fun `test custom base URL is used for tracking requests`() = runBlocking {
+        val sdk = HurraS2SSDK(
+            context = context,
+            accountId = "account_id",
+            apiKey = "api_key",
+            baseUrl = "https://www.example.com/hc_s2s/"
+        )
+
+        val result = sdk.trackEvent("test_event")
+        assert(result.isSuccess)
+
+        coVerify {
+            NetworkClient.post(
+                url = "https://www.example.com/hc_s2s/rt/?cid=account_id&app=1",
+                headers = any(),
+                body = any()
+            )
+        }
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `test non-https base URL is rejected`() {
+        HurraS2SSDK(
+            context = context,
+            accountId = "account_id",
+            apiKey = "api_key",
+            baseUrl = "http://www.example.com/hc_s2s"
+        )
+    }
 } 
