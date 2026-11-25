@@ -18,6 +18,10 @@ import android.webkit.URLUtil
  * @param useAdvertiserId Whether to use advertiser ID or generate a unique ID
  * @param customUserId Optional custom user ID to use for tracking
  * @param testing Whether to enable testing mode
+ * @param baseUrl Base URL that tracking requests are sent to, e.g. your own domain with a
+ * reverse proxy to the Hurra S2S server (`https://www.example.com/hc_s2s`). Must use https.
+ * A trailing slash is optional. Defaults to [DEFAULT_BASE_URL].
+ * @throws IllegalArgumentException if [baseUrl] is not a valid https URL
  */
 class HurraS2SSDK(
     private val context: Context,
@@ -26,7 +30,17 @@ class HurraS2SSDK(
     private val useAdvertiserId: Boolean = false,
     private val customUserId: String? = null,
     private val testing: Boolean = false,
+    baseUrl: String = DEFAULT_BASE_URL,
 ) {
+    companion object {
+        /** Default base URL of the Hurra S2S server. */
+        const val DEFAULT_BASE_URL = "https://s2s.hurra.com"
+
+        internal fun buildTrackingUrl(baseUrl: String, accountId: String): String =
+            "${BaseUrl.normalize(baseUrl)}/rt/?cid=$accountId&app=1"
+    }
+
+    private val trackingUrl: String = buildTrackingUrl(baseUrl, accountId)
     private val TAG = "HurraS2SSDK"
     private var userId: String = ""
     private var privacyPrefs: PrivacyPrefs? = null
@@ -200,7 +214,7 @@ class HurraS2SSDK(
                 headers["Cookie"] = "tracking_devel_mode=1"
             }
             val response = NetworkClient.post(
-                url = "https://s2s.hurra.com/rt/?cid=$accountId&app=1",
+                url = trackingUrl,
                 headers = headers,
                 body = requestBody
             )
