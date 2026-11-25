@@ -13,7 +13,8 @@ PrivacyPrefsAPI(
     apiKey: String,
     userId: String,
     testing: Boolean? = false,
-    privacyPrefs: PrivacyPrefs? = null
+    privacyPrefs: PrivacyPrefs? = null,
+    baseUrl: String = HurraS2SSDK.DEFAULT_BASE_URL
 )
 ```
 Parameters:
@@ -23,6 +24,7 @@ Parameters:
 * userId: Unique identifier for the current user
 * testing: Optional flag to enable testing mode (adds special headers), defaults to false
 * privacyPrefs: Optional initial privacy preferences, defaults to new instance if null
+* baseUrl: Optional base URL of the API, e.g. your own domain with a reverse proxy (`https://www.example.com/hc_s2s`), must use https; defaults to `https://s2s.hurra.com`. See "Sending requests through your own domain" in [README.md](README.md)
 
 > [!IMPORTANT]
 > userId should match the userid used in the HurraS2SSDK.
